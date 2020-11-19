@@ -1,0 +1,212 @@
+trigger:
+
+- develop
+
+pool:
+
+  vmImage: 'ubuntu-latest'
+
+variables:
+
+  imageName: 'boriszn/devicemanagerapi'
+
+  buildConfiguration: 'Release'
+
+  fullImageName: '$(imageName):$(imageTag)'
+
+  containerRegistry: betaConsultingContainerRegistry.azurecr.io
+
+  imageTag: '.$(build.buildId).'
+
+  serviceConnection: 'az-connect'
+
+  azureResourceGroupName: 'betaConsultingResourceGroup'
+
+  aksClusterName: 'betaConsultingAKSCluster'
+
+  aksKubeDeploymentYaml: './deployment/aks-deployment.yaml'
+
+  kubernetesServiceEndpoint: 'aks-connection'
+
+
+steps:
+
+
+- script: |
+
+
+    dotnet restore
+
+
+    dotnet build ./src/DeviceManager.Api/ --configuration $(buildConfiguration)
+
+
+    dotnet test ./test/DeviceManager.Api.UnitTests/ --configuration $(buildConfiguration) --filter Category!=Integration --logger "trx;LogFileName=testresults.trx"
+
+
+    dotnet test ./test/DeviceManager.Api.UnitTests/ --configuration $(buildConfiguration) --filter Category!=Integration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(System.DefaultWorkingDirectory)/TestResults/Coverage/
+
+
+    cd ./test/DeviceManager.Api.UnitTests/
+
+
+    dotnet reportgenerator "-reports:$(System.DefaultWorkingDirectory)/TestResults/Coverage/coverage.cobertura.xml" "-targetdir:$(System.DefaultWorkingDirectory)/TestResults/Coverage/Reports" "-reportTypes:htmlInline" "-tag:$(Build.BuildNumber)"
+
+
+    cd ../../
+
+
+    dotnet publish ./src/DeviceManager.Api/ --configuration $(buildConfiguration) --output $BUILD_ARTIFACTSTAGINGDIRECTORY
+
+
+- task: PublishTestResults@
+
+
+  inputs:
+
+
+    testRunner: VSTest
+
+
+    testResultsFiles: '**/*.trx'
+
+
+
+- task: PublishCodeCoverageResults@
+
+
+  inputs:
+
+    codeCoverageTool: cobertura
+
+    summaryFileLocation: $(System.DefaultWorkingDirectory)/TestResults/Coverage/**/*.xml
+
+    reportDirectory: $(System.DefaultWorkingDirectory)/TestResults/Coverage/Reports
+
+    failIfCoverageEmpty: false
+
+
+- task: PublishBuildArtifacts@
+
+
+- task: Docker@
+
+
+  displayName: 'Containerize the application'
+
+
+  inputs:
+
+
+    azureSubscriptionEndpoint: $(serviceConnection)
+
+
+    azureContainerRegistry: $(containerRegistry)
+
+
+    dockerFile: './src/DeviceManager.Api/Dockerfile'
+
+
+    imageName: '$(fullImageName)'
+
+
+    includeLatestTag: true
+
+
+- task: Docker@
+
+
+  displayName: 'Push image'
+
+
+  inputs:
+
+    azureSubscriptionEndpoint: $(serviceConnection)
+
+
+    azureContainerRegistry: $(containerRegistry)
+
+
+    command: 'Push an image'
+
+
+    imageName: '$(fullImageName)'
+
+
+
+- task: Docker@
+
+  displayName: 'Push latest image'
+
+
+  inputs:
+
+    azureSubscriptionEndpoint: $(serviceConnection)
+
+
+    azureContainerRegistry: $(containerRegistry)
+
+
+    command: 'Push an image'
+
+
+    imageName: '$(imageName):latest' 
+
+
+- task: PowerShell@
+
+
+  displayName: 'Replace version number in AKS deployment yaml'
+
+
+  inputs:
+
+
+    targetType: inline
+
+
+    script: |
+
+
+        # Replace image tag in aks YAML
+
+
+        ((Get-Content -path $(aksKubeDeploymentYaml) -Raw) -replace '##BUILD_ID##','$(imageTag)') | 
+
+
+        Set-Content -Path $(aksKubeDeploymentYaml)
+
+
+        # Get content
+
+
+        Get-Content -path  $(aksKubeDeploymentYaml)
+
+
+
+- task: Kubernetes@
+
+
+  displayName: 'kubectl apply'
+
+
+  inputs:
+
+
+    kubernetesServiceEndpoint: $(kubernetesServiceEndpoint)
+
+
+    azureSubscriptionEndpoint: $(serviceConnection)
+
+
+    azureResourceGroup: $(azureResourceGroupName)
+
+
+    kubernetesCluster: $(aksClusterName)
+
+
+    arguments: '-f $(aksKubeDeploymentYaml)'
+
+
+    command: 'apply'
+
