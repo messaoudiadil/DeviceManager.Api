@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: devicemanagerapi-container
-        image: devicemanagerreg.azurecr.io/boriszn/devicemanagerapi:1.0.4
+        image: betaconsultingcontainerregistry.azurecr.io/devicemanagerapi:##BUILD_ID##
         imagePullPolicy: Always
         ports:
         - containerPort: 80
