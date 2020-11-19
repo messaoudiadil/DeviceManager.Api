@@ -76,30 +76,22 @@ steps:
 
     failIfCoverageEmpty: false
 
-
-- task: PublishBuildArtifacts@
+- task: PublishBuildArtifacts@1
 
 
 - task: Docker@1
 
-
   displayName: 'Containerize the application'
-
 
   inputs:
 
-
     azureSubscriptionEndpoint: $(serviceConnection)
-
 
     azureContainerRegistry: $(containerRegistry)
 
-
     dockerFile: './src/DeviceManager.Api/Dockerfile'
 
-
     imageName: '$(fullImageName)'
-
 
     includeLatestTag: true
 
