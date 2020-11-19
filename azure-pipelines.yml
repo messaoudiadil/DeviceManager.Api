@@ -23,7 +23,7 @@ variables:
 
   aksClusterName: 'betaConsultingAKSCluster'
 
-  aksKubeDeploymentYaml: './deployment/aks-deployment.yaml'
+  aksKubeDeploymentYaml: './aks-deployment/aks-deployment.yaml'
 
   kubernetesServiceEndpoint: 'aks-connection'
 
