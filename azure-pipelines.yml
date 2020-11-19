@@ -16,8 +16,7 @@ variables:
 
   containerRegistry: betaConsultingContainerRegistry.azurecr.io
 
-  imageTag: '.$(build.buildId).'
-
+  imageTag: '1.$(build.buildId).4'
   serviceConnection: 'az-connect'
 
   azureResourceGroupName: 'betaConsultingResourceGroup'
@@ -34,32 +33,24 @@ steps:
 
 - script: |
 
-
     dotnet restore
-
 
     dotnet build ./src/DeviceManager.Api/ --configuration $(buildConfiguration)
 
-
     dotnet test ./test/DeviceManager.Api.UnitTests/ --configuration $(buildConfiguration) --filter Category!=Integration --logger "trx;LogFileName=testresults.trx"
-
 
     dotnet test ./test/DeviceManager.Api.UnitTests/ --configuration $(buildConfiguration) --filter Category!=Integration /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(System.DefaultWorkingDirectory)/TestResults/Coverage/
 
-
     cd ./test/DeviceManager.Api.UnitTests/
-
 
     dotnet reportgenerator "-reports:$(System.DefaultWorkingDirectory)/TestResults/Coverage/coverage.cobertura.xml" "-targetdir:$(System.DefaultWorkingDirectory)/TestResults/Coverage/Reports" "-reportTypes:htmlInline" "-tag:$(Build.BuildNumber)"
 
-
     cd ../../
-
 
     dotnet publish ./src/DeviceManager.Api/ --configuration $(buildConfiguration) --output $BUILD_ARTIFACTSTAGINGDIRECTORY
 
 
-- task: PublishTestResults@
+- task: PublishTestResults@2
 
 
   inputs:
@@ -72,7 +63,7 @@ steps:
 
 
 
-- task: PublishCodeCoverageResults@
+- task: PublishCodeCoverageResults@1
 
 
   inputs:
@@ -89,7 +80,7 @@ steps:
 - task: PublishBuildArtifacts@
 
 
-- task: Docker@
+- task: Docker@1
 
 
   displayName: 'Containerize the application'
@@ -113,7 +104,7 @@ steps:
     includeLatestTag: true
 
 
-- task: Docker@
+- task: Docker@1
 
 
   displayName: 'Push image'
@@ -134,7 +125,7 @@ steps:
 
 
 
-- task: Docker@
+- task: Docker@1
 
   displayName: 'Push latest image'
 
@@ -153,7 +144,7 @@ steps:
     imageName: '$(imageName):latest' 
 
 
-- task: PowerShell@
+- task: PowerShell@2
 
 
   displayName: 'Replace version number in AKS deployment yaml'
@@ -184,7 +175,7 @@ steps:
 
 
 
-- task: Kubernetes@
+- task: Kubernetes@1
 
 
   displayName: 'kubectl apply'
