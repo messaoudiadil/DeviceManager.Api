@@ -13,7 +13,7 @@ using System;
 namespace DeviceManager.Api
 {
     /// <summary>
-    /// Configuration class for dotnet core application
+    /// Configuration class for dotnet core application version2
     /// </summary>
     public class Startup
     {
