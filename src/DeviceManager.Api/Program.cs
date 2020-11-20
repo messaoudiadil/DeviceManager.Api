@@ -5,7 +5,7 @@ using System.IO;
 
 namespace DeviceManager.Api
 {
-    /// <summary>
+    /// <summary demo>
     /// Starting or hosting class of the applcation 
     /// To change the Environment change the ASPNETCORE_ENVIRONMENT value of the profile in launchSettings.json file.
     /// </summary>
